@@ -1,0 +1,173 @@
+{% extends 'main/base.html' %}
+{% block content %}
+<p class="text-left text-dark d-inline">{{request.user}} | </p>
+<a class="link-dark" href="{% url 'main:logout' %}">Logout</a>
+<h4 class="text-center my-3 pb-3">To Do App</h4>
+<form class="row row-cols-lg-auto g-3 justify-content-center align-items-center mb-4 pb-2" id="createTask">
+    <div class="col-12">
+      <div class="form-outline">
+        <input type="text" id="title" class="form-control" />
+        <label class="form-label" for="form1">Enter a task here</label>
+      </div>
+    </div>
+    <div class="col-12">
+        <button type="submit" class="btn btn-primary">Save</button>
+      </div>
+</form>
+<table class="table mb-4" id="itemsTable">
+<thead>
+  <tr>
+    <th scope="col">No.</th>
+    <th scope="col">Todo item</th>
+    <th scope="col">Actions</th>
+  </tr>
+</thead>
+<tbody>
+</tbody>
+</table>
+<script type="text/javascript">
+    buildTable();
+    function getCookie(name) {
+        var cookieValue = null;
+        if (document.cookie && document.cookie != '') {
+            var cookies = document.cookie.split(';');
+            for (var i = 0; i < cookies.length; i++) {
+                var cookie = cookies[i].trim();
+                // Does this cookie string begin with the name we want?
+                if (cookie.substring(0, name.length + 1) == (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    function buildTable(){
+        var table = document.getElementById("itemsTable");
+        var tbodyRef = table.getElementsByTagName("tbody")[0];
+        tbodyRef.innerHTML = '';
+        
+
+        var url = 'http://127.0.0.1:8000/api/task-list/';
+        fetch(url)
+        .then((resp)=>resp.json())
+        .then(function(data){
+            var list = data;
+            for (var i in list){
+                var done = ''
+                var title = ''
+                if(list[i].completed){
+                    done = `<button onclick="undoneTask(this)" type="button" class="btn btn-dark" value="${list[i].id}">Not done</button>`;
+                    title = `<s>${list[i].title}</s>`
+                }
+                else{
+                    done = `<button onclick="doneTask(this)" type="button" class="btn btn-success" value="${list[i].id}">Done</button>`;
+                    title = `${list[i].title}`
+                }
+                title = title.replaceAll("'", "&#146");
+                title = title.replaceAll('"', "&#148");
+                var item = `
+                <tr>
+                    <strike>
+                    <th scope="row">${i}</th>
+                    <td><p class="text-dark">${title}</p></td>
+                    <td>
+                        ${done}
+                        <button onclick="editTask(this)" type="button" class="btn btn-primary" value="${list[i].id}">Edit</button>
+                        <button onclick="deleteTask(this)" type="button" class="btn btn-danger" value="${list[i].id}">Delete</button>
+                    </td>
+                </strike>
+                </tr>
+                `;
+                tbodyRef.innerHTML += item;
+            }
+        })
+    }
+    var csrftoken = getCookie('csrftoken');
+    var form = document.getElementById('createTask');
+    form.addEventListener('submit', function(e){
+        e.preventDefault();
+        console.log('Form submitted');
+        var url = 'http://127.0.0.1:8000/api/task-create/';
+        var title = document.getElementById('title').value;
+        fetch(url, {
+            method:'POST',
+            headers:{
+                'Content-type':'application/json',
+                'X-CSRFToken':csrftoken
+            },
+            body:JSON.stringify({'title':title})
+        }).then(function(response){
+            buildTable();
+            document.getElementById('createTask').reset();
+        });
+    });
+
+    function editTask(e){
+        id = e.value;
+        td_button = e.parentElement;
+        row = e.parentElement.parentElement;
+        td_button.innerHTML = `<button onclick="saveTask(this)" type="button" class="btn btn-primary" value="${id}">Save</button>
+                                <button onclick="buildTable()" type="button" class="btn btn-danger">Cancel</button>`
+        td_text = row.getElementsByTagName('td')[0];
+        title = td_text.getElementsByTagName('p')[0].textContent;
+        td_text.innerHTML = `<input type="text" id="title_update" class="form-control" value="${title}" />`
+    }
+    function saveTask(e){
+        var url = `http://127.0.0.1:8000/api/task-update/${e.value}/`;
+        var title = document.getElementById('title_update').value;
+        fetch(url, {
+            method:'POST',
+            headers:{
+                'Content-type':'application/json',
+                'X-CSRFToken':csrftoken
+            },
+            body:JSON.stringify({'title':title})
+        }).then(function(response){
+            buildTable();
+        });
+    }
+
+    function deleteTask(e){
+        id = e.value;
+        var url = `http://127.0.0.1:8000/api/task-delete/${e.value}/`;
+        fetch(url, {
+            method:'DELETE',
+            headers:{
+                'Content-type':'application/json',
+                'X-CSRFToken':csrftoken
+            },
+        }).then(function(response){
+            buildTable();
+        });
+    }
+
+    function doneTask(e){
+        var url = `http://127.0.0.1:8000/api/task-update/${e.value}/`;
+        fetch(url, {
+            method:'POST',
+            headers:{
+                'Content-type':'application/json',
+                'X-CSRFToken':csrftoken
+            },
+            body:JSON.stringify({'completed':true})
+        }).then(function(response){
+            buildTable();
+        });
+    }
+    function undoneTask(e){
+        var url = `http://127.0.0.1:8000/api/task-update/${e.value}/`;
+        fetch(url, {
+            method:'POST',
+            headers:{
+                'Content-type':'application/json',
+                'X-CSRFToken':csrftoken
+            },
+            body:JSON.stringify({'completed':false})
+        }).then(function(response){
+            buildTable();
+        });
+    }
+    
+</script>
+{% endblock content %}

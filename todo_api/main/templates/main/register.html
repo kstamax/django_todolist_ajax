@@ -1,0 +1,10 @@
+{% extends 'main/base.html' %}
+{% block content %}
+<h4 class="text-center my-3 pb-3">To Do App</h4>
+<form method="POST" class="text-center">
+    {% csrf_token %}
+    {{form.as_p}}
+    <button type="submit" class="btn btn-primary">Register</button>
+</form>
+<p class="text-center">Already have an account? <a href="{% url 'main:login' %}">Login</a></p>
+{% endblock %}
