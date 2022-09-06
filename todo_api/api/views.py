@@ -1,56 +1,47 @@
-from django.shortcuts import render
-from django.http import JsonResponse
-
-from rest_framework.decorators import api_view
 from rest_framework.response import Response
+from rest_framework import status
+from django.http import Http404
+from rest_framework import generics
+from rest_framework.views import APIView
+from rest_framework import permissions
 from .serializers import TaskSerializer
 
 from .models import Task
-# Create your views here.
-@api_view(["GET"])
-def apiOverview(request):
-    api_urls = {
-        'List': '/task-list',
-        'Detail View': '/task-detail/<str:pk>/',
-        'Create':'/task-create/',
-        'Update':'/taks-update/<str:pk>/',
-        'Delete':'/task-delete/<str:pk>/',
 
-    }
-    return JsonResponse(api_urls)
+class TaskList(generics.ListCreateAPIView):
+    # permission_classes = [permissions.IsAuthenticated]
+    serializer_class = TaskSerializer
+    def get_queryset(self):
+        return Task.objects.filter(user = self.request.user).order_by("-id")
 
-@api_view(["GET"])
-def taskList(request):
-    tasks = Task.objects.filter(user = request.user).order_by("-id")
-    serializer = TaskSerializer(tasks, many=True)
-    return Response(serializer.data)
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+    
 
-@api_view(["GET"])
-def taskDetail(request, pk):
-    task = Task.objects.get(id = pk)
-    serializer = TaskSerializer(task, many=False)
-    return Response(serializer.data)
+class TaskDetail(APIView):
+    # permission_classes = [permissions.IsAuthenticated]
 
-@api_view(["POST"])
-def taskCreate(request):
-    serializer = TaskSerializer(data=request.data)
-    if serializer.is_valid():
-        serializer.save(user=request.user)
-    return Response(serializer.data)
+    def get_object(self,pk):
+        try:
+            return Task.objects.get(pk=pk)
+        except Task.DoesNotExist:
+            raise Http404
 
-@api_view(["POST"])
-def taskUpdate(request, pk):
-    task = Task.objects.get(id = pk)
-    serializer = TaskSerializer(instance=task,data=request.data, partial = True)
-    if task.user != request.user:
-        return Response({'status':403,'message':'Wrong user'})
-    if serializer.is_valid():
-        serializer.save()
-    print(serializer.data)
-    return Response(serializer.data)
+    def post(self, request, pk, format=None):
+        task = self.get_object(pk)
+        serializer = TaskSerializer(task, data=request.data, partial = True)
+        if request.user != task.user:
+            return Response(data={'details':'This task belongs to other user'},status=status.HTTP_403_FORBIDDEN)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-@api_view(["DELETE"])
-def taskDelete(request, pk):
-    task = Task.objects.get(id = pk)
-    task.delete()
-    return Response("deleted")
+    def delete(self, request, pk, format=None):
+        task = self.get_object(pk)
+        if request.user == task.user:
+            task.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response(data={'details':'This task belongs to other user'},status=status.HTTP_403_FORBIDDEN)
+        
+        

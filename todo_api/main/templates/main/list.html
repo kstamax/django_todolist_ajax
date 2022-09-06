@@ -26,6 +26,7 @@
 </tbody>
 </table>
 <script type="text/javascript">
+    const BASE_API_URL = `{% url 'api:tasks' %}`
     buildTable();
     function getCookie(name) {
         var cookieValue = null;
@@ -48,7 +49,7 @@
         tbodyRef.innerHTML = '';
         
 
-        var url = 'http://127.0.0.1:8000/api/task-list/';
+        var url = BASE_API_URL;
         fetch(url)
         .then((resp)=>resp.json())
         .then(function(data){
@@ -87,8 +88,7 @@
     var form = document.getElementById('createTask');
     form.addEventListener('submit', function(e){
         e.preventDefault();
-        console.log('Form submitted');
-        var url = 'http://127.0.0.1:8000/api/task-create/';
+        var url = BASE_API_URL;
         var title = document.getElementById('title').value;
         fetch(url, {
             method:'POST',
@@ -114,7 +114,7 @@
         td_text.innerHTML = `<input type="text" id="title_update" class="form-control" value="${title}" />`
     }
     function saveTask(e){
-        var url = `http://127.0.0.1:8000/api/task-update/${e.value}/`;
+        var url = BASE_API_URL+`${e.value}/`;
         var title = document.getElementById('title_update').value;
         fetch(url, {
             method:'POST',
@@ -130,7 +130,7 @@
 
     function deleteTask(e){
         id = e.value;
-        var url = `http://127.0.0.1:8000/api/task-delete/${e.value}/`;
+        var url = BASE_API_URL+`${e.value}/`;
         fetch(url, {
             method:'DELETE',
             headers:{
@@ -143,7 +143,7 @@
     }
 
     function doneTask(e){
-        var url = `http://127.0.0.1:8000/api/task-update/${e.value}/`;
+        var url = BASE_API_URL+`${e.value}/`;
         fetch(url, {
             method:'POST',
             headers:{
@@ -156,7 +156,7 @@
         });
     }
     function undoneTask(e){
-        var url = `http://127.0.0.1:8000/api/task-update/${e.value}/`;
+        var url = BASE_API_URL+`${e.value}/`;
         fetch(url, {
             method:'POST',
             headers:{
