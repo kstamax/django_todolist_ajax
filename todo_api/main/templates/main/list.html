@@ -55,6 +55,7 @@
         .then(function(data){
             var list = data;
             for (var i in list){
+                num = parseInt(i)+1
                 var done = ''
                 var title = ''
                 if(list[i].completed){
@@ -69,15 +70,13 @@
                 title = title.replaceAll('"', "&#148");
                 var item = `
                 <tr>
-                    <strike>
-                    <th scope="row">${i}</th>
+                    <th scope="row">${num}</th>
                     <td><p class="text-dark">${title}</p></td>
                     <td>
                         ${done}
                         <button onclick="editTask(this)" type="button" class="btn btn-primary" value="${list[i].id}">Edit</button>
                         <button onclick="deleteTask(this)" type="button" class="btn btn-danger" value="${list[i].id}">Delete</button>
                     </td>
-                </strike>
                 </tr>
                 `;
                 tbodyRef.innerHTML += item;
